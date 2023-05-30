@@ -12,8 +12,11 @@ template<typename Vertex, typename Distance = double>
 class Graph{
 public:
     struct Edge{
-        
-        
+        vertexType id1;
+         vertexType id2;
+        dist_type dist;
+    Edge(vertexType id1_ = 0, vertexType id2_ = 0, dist_type distance_ = 0) : id1(id1_), id2(id2_), dist(distance_) {}
+
     }
 
 
