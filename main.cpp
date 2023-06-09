@@ -6,6 +6,7 @@
 #include <queue>
 #include <algorithm>
 #include <windows.h>
+#include <limits>
 
 using namespace std;
 template<typename Vertex, typename Distance >
@@ -99,10 +100,9 @@ public:
     {
         if (!has_vertex(v1)) {
             cout << "Нет такой вершины";
-
+            return {};
         }
-       
-        return(dict.find(v1)->second);
+        else  return(dict.find(v1)->second);
     }
     size_t order() const { return dict.size(); }//порядок
     size_t degree(const Vertex& v) const
@@ -112,37 +112,64 @@ public:
     }//степень
 
     //поиск кратчайшего пути
-    void shortest_path(const Vertex& v1, const Vertex& v2) const
-    {
-        if (!has_vertex(v1) || !has_vertex(v2)) throw std::invalid_argument("Вершина не найдена!");
-        vector<Edge> resullt;
-        std::unordered_map<Vertex, Distance> distance;
-        std::unordered_map<Vertex, Edge> ancestors;
-        vector<Edge> parent;
-        parent.push_back({ v1,v1,0 });
-        //cout << parent[0].out << parent[0].in << parent[0].distance;
-        for (auto& item : dict)
+    std::vector<Edge> shortest_path(const Vertex& v1, const Vertex& v2, Distance* dist = nullptr) const {
+        if (!has_vertex(v1) || !has_vertex(v2))
         {
-            distance[item.first] = 100;
-            distance[v1] = 0;
+            cout << "Вершина не найдена!";
+            _getch();
+            return {};
+           
         }
-
-        for (size_t i = 0; i < order() - 1; i++)
-        {
-            for (const auto& pair : dict)
-            {
-                for (const auto& edge : pair.second)
-                {
-                    if (distance[edge.v1] + edge.distance < distance[edge.v1])
-                    {
-                        distance[edge.v2] = distance[edge.v1] + edge.distance;
-                        ancestors[edge.v2] = edge;
+        else {
+            #undef max
+           
+            std::vector<Edge> result;
+            std::unordered_map<Vertex, Distance> distance;
+            std::unordered_map<Vertex, Edge> ancestors;
+            for (auto& item : dict) distance[item.first] = std::numeric_limits<Distance>::max();
+            distance[v1] = 0;
+            for (size_t i = 0; i < order() - 1; ++i) {
+                for (const auto& pair : dict) {
+                    for (const auto& edge : pair.second) {
+                        if (distance[edge.v1] + edge.distance < distance[edge.v2]) {
+                            distance[edge.v2] = distance[edge.v1] + edge.distance;
+                            ancestors[edge.v2] = edge;
+                        }
                     }
                 }
             }
-        }
-        cout << distance[v2];
 
+            for (const auto& pair : dict) {
+                for (const auto& edge : pair.second) {
+                    if (distance[edge.v1] + edge.distance < distance[edge.v2])
+                    {
+                        cout << "Граф имеет отрицательный цикл";
+                        _getch();
+                        return {};
+                    }
+                }
+            
+            }
+
+            if (distance[v2] == std::numeric_limits<Distance>::max()) {
+                cout << "\nНевозожно связать вершины\n";
+                _getch();
+                return {};
+            }
+            
+            Vertex current = v2; // текущая вершина - конечная
+            while (current !=v1) {
+                result.push_back(ancestors[current]);
+                current = ancestors[current].v1;
+            }
+
+            std::reverse(result.begin(), result.end());
+            cout << "Результат:\n";
+            for (const auto& elem : result) cout << elem.v1 << " ";
+            _getch();
+            return result;
+
+        }
     }
     void print_vertex()
     {
@@ -152,121 +179,121 @@ public:
     }
     void print_graph()
     {
-        cout << "Вершина --> (Куда, расстояние)" << "\n";
+        cout << "\nV1   -->   V2" << "\n";
+        cout << "   вес   \n";
+        bool entered = false;
         for (auto& elem : dict)
         {
-            cout << elem.first << " --> ";
             for (auto& tmp : elem.second)
             {
-                if (tmp.distance != 0)
-                {
-                    cout << "(" << tmp.v2 << "," << tmp.distance << ")";
-                }
-                else
-                {
-                    cout << "(" << tmp.v2 << ",None)";
-                }
+                entered = true;
+                cout << "\n" << elem.first << " --> ";
+                cout << tmp.v2<<"\n";
+                cout << "   " << tmp.distance << "\n";
+
             }
-            cout << "\n";
+            if (!entered)  cout << "\n" << elem.first << " -->None ";
         }
-        cout << endl;
     }
     void task()
     {
         vector<Vertex> result;
 
         double maximum_of_average_distances = 0;
-        for (const auto& pair : dict)
+        for (const auto& elem : dict)
         {
             double tmp = 0;
-            int size_vector = pair.second.size();
-            for (const auto& edge : pair.second)
+            int size_vector = elem.second.size();
+            for (const auto& edge : elem.second)
             {
                 tmp += edge.distance;
             }
             tmp /= size_vector;
             if (tmp > maximum_of_average_distances)
             {
-                if (tmp == maximum_of_average_distances) result.push_back(pair.first);
+                if (tmp == maximum_of_average_distances) result.push_back(elem.first);
                 else {
                     result.clear();
-                    result.push_back(pair.first);
+                    result.push_back(elem.first);
                 }
                 maximum_of_average_distances = tmp;
             }
 
         }
-        cout << "Максимально среднее удаление наблюдается у  -->";
+        cout << "Максимально среднее удаление наблюдается у вершины ";
         for (auto& i : result) cout << i << ' ';
 
     }
     //обход
-     
-     vector<Vertex> help_walk(vector<Vortex> vizited,const Vertex& v)const
+    bool in_vector(vector<Vertex> vizited, const Vertex tmp )const
+    {
+        for (auto& elem : vizited) if (elem == tmp) return true;
+        return false;
+     }
+
+     vector<Vertex> help_walk(vector<Vertex> vizited,const Vertex& v)const
      {
+
         vizited.push_back(v);
-         for (auto & elem :dict.find(v)->second) if()
-
-
+        for (auto& elem : dict.find(v)->second)  if (!in_vector(vizited,elem.v2)) vizited = help_walk(vizited, elem.v2);
         return vizited;
      }
-     std::vector<Vertex>  walk(const Vertex& start_vertex)const; 
- // void DFS(const Vertex& start_vertex) 
- {  
-            vector<Vertex> vizited;
 
-            visited[start_vertex] = true;
-            list<int> adjList = adjLists[start_vertex];
+     vector<Vertex> walk(const Vertex& start_vertex)
+     {
+         if (has_vertex(start_vertex))
+         {
+             vector<Vertex> vizited;
+             return help_walk(vizited, start_vertex);
+         }
+         else cout << "Нет такой вершины";
+         return {};
+     }
 
-            cout << start_vertex << " ";
 
-            list<int>::iterator i;
-            for (i = adjList.begin(); i != adjList.end(); ++i)
-                if (!visited[*i])
-                DFS(*i);
-}
 };
 
 
 
-
-int main()
+template<typename Vertex, typename Distance >
+int main2()
 {
+    Vertex tmp1;
     int tmp;
-    vector <int> chose_vector;
+    vector <Vertex> chose_vector;
     setlocale(LC_ALL, "Rus");
     cout << "Ведите первую вершину ";
     cin >> tmp;
     chose_vector.push_back(tmp);
 
-    Graph<int, int> graph(chose_vector);
+    Graph<Vertex, Distance> graph(chose_vector);
     bool flag = true;
-    int v1, v2;
+    Vertex v1, v2;
     do {
         system("CLS");
         cout << "\nНаш граф:\n";
         graph.print_graph();
-        cout << "\nВыберите: \n1)Проверить существование вершины\n2)Добавить вершину\n3)Удалить вершину:\n4)Вернуть список вершин\n5)Добавить ребро\n6)Удалить ребро\n7)Проверка существования рерба\n7)Узнать степень вершины\n8)Доп задача\n9)Поиск кратчайшего пути\n10_Обход в глубину\n11)Выход";
+        cout << "\nВыберите: \n1)Проверить существование вершины\n2)Добавить вершину\n3)Удалить вершину\n4)Вернуть список вершин\n5)Добавить ребро\n6)Удалить ребро\n7)Узнать степень вершины\n8)Доп задача\n9)Поиск кратчайшего пути\n10)Обход в глубину\n11)Автозаполнение\n12)Выход";
         cin >> tmp;
         switch (tmp)
         {
         case 1:
             cout << "Ведите вершину ";
-            cin >> tmp;
-            if (graph.has_vertex(tmp)) cout << "Вершина есть";
+            cin >> tmp1;
+            if (graph.has_vertex(tmp1)) cout << "Вершина есть";
             else cout << "Вершины нет";
             _getch();
             break;
         case 2:
             cout << "Ведите вершину ";
-            cin >> tmp;
-            graph.add_vertex(tmp);
+            cin >> tmp1;
+            graph.add_vertex(tmp1);
             _getch();
             break;
         case 3:
             cout << "Ведите вершину ";
-            cin >> tmp;
-            if (graph.remove_vertex(tmp)) cout << "\nУспешно\n";
+            cin >> tmp1;
+            if (graph.remove_vertex(tmp1)) cout << "\nУспешно\n";
             _getch();
             break;
         case 4:
@@ -294,8 +321,8 @@ int main()
             break;
         case 7:
             cout << "Ведите вершину ";
-            cin >> tmp;
-            if (graph.degree(tmp)) cout << graph.degree(tmp);
+            cin >> tmp1;
+            if (graph.degree(tmp1)) cout << graph.degree(tmp1);
             _getch();
             break;
         case 8:
@@ -303,10 +330,32 @@ int main()
             _getch();
             break;
         case 9:
+            cout << "Введите первую вершину: ";
+            cin >> v1;
+            cout << "Введите вторую вершину: ";
+            cin >> v2;
+            graph.shortest_path(v1, v2);
+            _getch();
             break;
         case 10:
+            cout << "Ведите вершину ";
+            cin >> tmp1;
+            chose_vector=graph.walk(tmp1);
+            cout << "\n";
+            for (auto& elem : chose_vector) cout << elem << ' ';
+            _getch();
+            cout << "\n";
             break;
         case 11:
+            graph.add_edge(1, 2, 1);
+            graph.add_edge(2, 3, 1);
+            graph.add_edge(1, 3, 16);
+            graph.add_edge(1, 4, 12);
+            graph.add_edge(1, 5, 5);
+            graph.add_edge(5, 6, 7);
+            graph.add_edge(5, 7, 8);
+            break;
+        case 12:
             flag = false;
             cout << "\nДо свидания\n";
             break;
@@ -318,40 +367,32 @@ int main()
 
         }
     } while (flag);
-    graph.add_vertex(1);
-    graph.add_vertex(3);
-    graph.add_vertex(7);
-    graph.add_vertex(7);
-    graph.print_graph();
-    graph.add_edge(1, 4, 5);
-    graph.add_edge(1, 3, 1);
-    graph.add_edge(6, 4, 1);
-    graph.add_edge(3, 6, 4);
+   
 
-    graph.remove_edge(3, 2);
-    //graph.remove_edge(1,4,5);
-    graph.add_edge(1, 7, 5);
-    graph.add_edge(1, 3, 6);
-    graph.add_edge(4, 2, 4);
-    graph.add_edge(6, 6, 6);
-
-    graph.print_vertex();
-    graph.print_graph();
-    // if (!graph.has_edge(2, 3)) cout << "p,,";
-    // if (!graph.has_edge(1, 4)) cout << "p,,";
-    // if (graph.has_edge(2, 7)) cout << "p,,";
-    // if (graph.has_edge(3, 2)) cout << "p,,";
-    auto i = graph.edges(1);
-    // graph.walk(1);
-    cout << "(" << 1 << "--->  ";
-    // for (auto& j : i)
-    // {
-    //     cout << j.v2;
-    // }
-    cout << ")";
-    graph.shortest_path(1, 4);
-    // построить Graph
-
-    //graph.print_adjacency_matrix();
+   
     return 0;
 };
+
+int main()
+{
+    int tmp;
+    cout << "Выберите режим работы:\n1)<int int>\n2)<double double>\n3)<float float>\n";
+    cin >> tmp;
+    switch (tmp)
+    {
+    case 1:
+        main2<int,int>();
+        break;
+    case 2:
+        main2<double ,double>();
+        break;
+    case 3:
+        main2<float,float>();
+        break;
+    default:
+        cout << "\nНет такого варианта\n";
+        _getch();
+        system("CLS");
+        break;
+    }
+}
